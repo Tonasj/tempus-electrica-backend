@@ -132,7 +132,20 @@ namespace Infrastructure.Repositories
 
                 cachedDataList.AddRange(dbData);
 
-                // Cache the new data range
+                // Identify and merge overlapping cache ranges
+                var overlappingRanges = cachedRanges.Where(r => r.CacheEndDate >= startDate && r.CacheStartDate <= endDate).ToList();
+
+                if (overlappingRanges.Any())
+                {
+                    // Determine new merged range
+                    startDate = overlappingRanges.Min(r => r.CacheStartDate);
+                    endDate = overlappingRanges.Max(r => r.CacheEndDate);
+
+                    // Remove old overlapping ranges
+                    cachedRanges.RemoveAll(r => overlappingRanges.Contains(r));
+                }
+
+                // Cache the new merged data range
                 string newCacheKey = $"GetPricesForPeriod_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
                 var cacheOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(30));
 
